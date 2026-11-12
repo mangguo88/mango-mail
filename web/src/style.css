@@ -1,0 +1,151 @@
+@import 'tailwindcss';
+
+/**
+ * 运行时主题变量。
+ *
+ * 关键点：Tailwind v4 的 @theme 是编译期的，但它的值可以是 var()，
+ * 生成的 utility 会是 `background-color: var(--color-henna-500)`，
+ * 而 --color-henna-500 又指向 --brand-500 —— CSS 变量在运行时解析，
+ * 所以 JS 改写 :root 上的 --brand-500 就能实时换肤，无需重新构建。
+ *
+ * 透明度写法（如 bg-henna-500/10）会编译成
+ * color-mix(in oklab, var(--color-henna-500) 10%, transparent)，
+ * 同样是运行时解析，一并生效。
+ */
+:root {
+  --brand-50: #fdf4f0;
+  --brand-100: #f9e4da;
+  --brand-200: #f0c4ae;
+  --brand-300: #e5a288;
+  --brand-400: #d1714f;
+  --brand-500: #b4462f;
+  --brand-600: #97381f;
+  --brand-700: #7a2c18;
+
+  --accent-400: #d99256;
+  --accent-500: #c97b3c;
+  --accent-600: #a9622b;
+
+  --surface-50: #faf6f1;
+  --surface-100: #f3ece4;
+  --surface-200: #e7dcd0;
+  --surface-300: #d3c4b4;
+
+  --ui-radius: 14px;
+}
+
+/* ── Henna 设计令牌：暖赭 / 陶土 / 墨底，无冷色渐变 ───────────────── */
+@theme {
+  --color-sand-50: var(--surface-50); /* #faf6f1 */
+  --color-sand-100: var(--surface-100); /* #f3ece4 */
+  --color-sand-200: var(--surface-200); /* #e7dcd0 */
+  --color-sand-300: var(--surface-300); /* #d3c4b4 */
+
+  --color-henna-50: var(--brand-50); /* #fdf4f0 */
+  --color-henna-100: var(--brand-100); /* #f9e4da */
+  --color-henna-200: var(--brand-200); /* #f0c4ae */
+  --color-henna-300: var(--brand-300); /* #e5a288 */
+  --color-henna-400: var(--brand-400); /* #d1714f */
+  --color-henna-500: var(--brand-500); /* #b4462f */
+  --color-henna-600: var(--brand-600); /* #97381f */
+  --color-henna-700: var(--brand-700); /* #7a2c18 */
+
+  --color-clay-400: var(--accent-400); /* #d99256 */
+  --color-clay-500: var(--accent-500); /* #c97b3c */
+  --color-clay-600: var(--accent-600); /* #a9622b */
+
+  --color-ink-500: #57534e;
+  --color-ink-700: #292524;
+  --color-ink-800: #1f1b18;
+  --color-ink-900: #1c1917;
+
+  --color-jade-500: #3f7d63;
+  --color-jade-600: #2f6550;
+
+  --font-sans: 'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+
+  --radius-card: var(--ui-radius); /* 14px */
+}
+
+@layer base {
+  html,
+  body,
+  #app {
+    height: 100%;
+  }
+  body {
+    @apply bg-sand-50 text-ink-900 font-sans antialiased;
+  }
+  ::selection {
+    @apply bg-henna-200 text-ink-900;
+  }
+}
+
+/* ── 自定义 utility（用 @utility 定义，才能被 @apply 引用） ───────── */
+@utility btn {
+  @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition
+         disabled:cursor-not-allowed disabled:opacity-50;
+}
+
+@utility card {
+  @apply rounded-card border border-sand-200 bg-white shadow-[0_1px_2px_rgba(28,25,23,0.04)];
+}
+
+@utility input {
+  @apply w-full rounded-lg border border-sand-200 bg-white px-3 py-2 text-sm text-ink-900
+         placeholder:text-sand-300 focus:border-henna-400 focus:outline-none focus:ring-2 focus:ring-henna-100;
+}
+
+@utility label {
+  @apply mb-1 block text-xs font-medium text-ink-500;
+}
+
+@utility chip {
+  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium;
+}
+
+@utility nav-item {
+  @apply flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-ink-500 transition hover:bg-sand-100 hover:text-ink-900;
+}
+
+@utility tbl {
+  @apply w-full text-left text-sm;
+}
+
+@layer components {
+  .table {
+    @apply tbl;
+  }
+  /* 主色上的文字用 --brand-on：主色偏亮时自动转深色字，保证对比度 */
+  .btn-primary {
+    @apply btn bg-henna-500 hover:bg-henna-600 active:bg-henna-700;
+    color: var(--brand-on, #fff);
+  }
+  .btn-ghost {
+    @apply btn border border-sand-200 bg-white text-ink-700 hover:bg-sand-100;
+  }
+  .btn-danger {
+    @apply btn border border-henna-200 bg-white text-henna-600 hover:bg-henna-50;
+  }
+  .chip-plain {
+    @apply chip bg-sand-100 text-ink-500;
+  }
+  .chip-ok {
+    @apply chip bg-jade-500/10 text-jade-600;
+  }
+  .chip-warn {
+    @apply chip bg-clay-500/10 text-clay-600;
+  }
+  .chip-err {
+    @apply chip bg-henna-500/10 text-henna-600;
+  }
+  .nav-item-active {
+    @apply bg-henna-50 text-henna-600;
+  }
+  .table th {
+    @apply border-b border-sand-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-ink-500;
+  }
+  .table td {
+    @apply border-b border-sand-100 px-3 py-2.5;
+  }
+}

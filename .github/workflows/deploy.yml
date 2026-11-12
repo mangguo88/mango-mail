@@ -1,4 +1,4 @@
-name: 🚀 Deploy Henna Mail to Cloudflare Workers
+name: 🚀 Deploy mango-mail to Cloudflare Workers
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      NAME: ${{ secrets.NAME || vars.NAME || 'henna-mail' }}
+      NAME: ${{ secrets.NAME || vars.NAME || 'mango-mail' }}
       CUSTOM_DOMAIN: ${{ secrets.CUSTOM_DOMAIN || vars.CUSTOM_DOMAIN }}
       DOMAIN: ${{ secrets.DOMAIN || vars.DOMAIN }}
       ADMIN: ${{ secrets.ADMIN || vars.ADMIN }}

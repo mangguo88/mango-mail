@@ -27,7 +27,7 @@ export async function loadConfig(): Promise<void> {
     store.config = await api.get<PublicConfig>('/system/config');
   } catch {
     store.config = {
-      appName: 'Henna Mail',
+      appName: 'mango-mail',
       domains: [],
       allowRegister: true,
       strategy: 'priority',

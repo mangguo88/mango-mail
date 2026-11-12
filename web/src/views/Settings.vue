@@ -73,7 +73,7 @@ const curl = computed(() => `curl -X POST ${location.origin}/api/send \\
 #    添加「账户 / R2 存储桶 / 编辑」
 
 # 2. 仓库 Secrets 加一行
-R2_BUCKET_NAME = henna-mail-r2      # 你的桶名，留空则自动创建
+R2_BUCKET_NAME = mango-mail-r2      # 你的桶名，留空则自动创建
 
 # 3. 重新运行 deploy 工作流</pre>
       <p class="mt-2 text-[11px] text-ink-500">

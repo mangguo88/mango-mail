@@ -40,7 +40,7 @@ export const PROVIDERS: Record<string, OAuthProvider> = {
     userHeaders: (t) => ({
       Authorization: `Bearer ${t}`,
       Accept: 'application/vnd.github+json',
-      'User-Agent': 'Henna-Mail',
+      'User-Agent': 'mango-mail',
     }),
   },
   google: {
@@ -80,7 +80,7 @@ export async function fetchGithubEmail(accessToken: string): Promise<string> {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         Accept: 'application/vnd.github+json',
-        'User-Agent': 'Henna-Mail',
+        'User-Agent': 'mango-mail',
       },
     });
     const list = (await res.json()) as Array<{ email?: string; primary?: boolean; verified?: boolean }>;

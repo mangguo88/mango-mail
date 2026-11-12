@@ -192,7 +192,7 @@ async function removeMailbox(a: Address) {
   if (isCurrentMailbox(a)) router.push('/');
 }
 
-// 客户端密码说明：Henna 没有 IMAP/SMTP 客户端接入，收信走 Cloudflare，读信只在网页面板
+// 客户端密码说明：mango-mail 没有 IMAP/SMTP 客户端接入，收信走 Cloudflare，读信只在网页面板
 const showClientPassInfo = ref(false);
 function openClientPassInfo() {
   openMenuId.value = null;
@@ -243,9 +243,9 @@ const paths: Record<string, string> = {
     >
       <!-- 头部：点 logo / 名称回首页 -->
       <RouterLink to="/" class="flex items-center gap-2.5 px-4 py-5" :class="collapsed ? 'justify-center px-2' : ''" title="回首页">
-        <img src="/logo-512.png" alt="Henna Mail" class="h-7 w-auto shrink-0" />
+        <img src="/logo-512.png" alt="mango-mail" class="h-7 w-auto shrink-0" />
         <div v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
-          <div class="truncate text-sm font-semibold text-ink-900">{{ store.config?.appName ?? 'Henna Mail' }}</div>
+          <div class="truncate text-sm font-semibold text-ink-900">{{ store.config?.appName ?? 'mango-mail' }}</div>
           <div class="text-[11px] text-ink-500">邮箱分发系统</div>
         </div>
       </RouterLink>
@@ -400,7 +400,7 @@ const paths: Record<string, string> = {
               <path d="M3 7l9 6 9-6" />
             </svg>
           </div>
-          <span class="text-sm font-semibold">{{ store.config?.appName ?? 'Henna Mail' }}</span>
+          <span class="text-sm font-semibold">{{ store.config?.appName ?? 'mango-mail' }}</span>
         </RouterLink>
         <button class="btn-ghost !px-2 !py-1 text-xs" @click="logout">退出</button>
       </header>
@@ -486,7 +486,7 @@ const paths: Record<string, string> = {
       <div class="w-full max-w-xs rounded-2xl bg-white p-4 shadow-xl">
         <div class="mb-1 text-sm font-semibold">客户端密码</div>
         <div class="mb-3 text-xs leading-relaxed text-ink-500">
-          Henna 收信走 Cloudflare，读信只在网页面板，没有 IMAP / SMTP 客户端接入，所以没有可设的客户端密码。
+          mango-mail 收信走 Cloudflare，读信只在网页面板，没有 IMAP / SMTP 客户端接入，所以没有可设的客户端密码。
           平时登录面板用的是账号密码，在左下角账户设置里改。
         </div>
         <div class="flex justify-end">

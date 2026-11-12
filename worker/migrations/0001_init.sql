@@ -1,5 +1,5 @@
--- Henna Mail · initial schema
--- wrangler d1 migrations apply henna-mail-db --remote
+-- mango-mail · initial schema
+-- wrangler d1 migrations apply mango-mail-db --remote
 
 CREATE TABLE IF NOT EXISTS user (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,

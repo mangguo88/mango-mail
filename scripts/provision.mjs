@@ -25,7 +25,7 @@ if (!TOKEN || !ACCOUNT) {
   process.exit(1);
 }
 
-const NAME = process.env.NAME || 'henna-mail';
+const NAME = process.env.NAME || 'mango-mail';
 const D1_NAME = process.env.D1_NAME || `${NAME}-db`;
 const KV_TITLE = process.env.KV_TITLE || `${NAME}-kv`;
 const R2_NAME = process.env.R2_BUCKET_NAME || `${NAME}-r2`;

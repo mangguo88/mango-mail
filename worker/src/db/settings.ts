@@ -51,7 +51,7 @@ export const PUBLIC_KEYS = [
 
 export const DEFAULT_SETTINGS: Record<string, string> = {
   // ── 基本
-  site_title: 'Henna Mail',
+  site_title: 'mango-mail',
   site_notice_enabled: 'false',
   site_notice_content: '',
   allow_register: 'true',

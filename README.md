@@ -1,0 +1,477 @@
+<div align="center">
+  <img src="docs/preview/logo.png" alt="mango-mail" width="180" />
+  <h1>mango-mail</h1>
+  <p><b>边缘邮箱分发系统</b> · Cloudflare Workers · 全栈 TypeScript</p>
+</div>
+
+一个跑在 Cloudflare Workers 上的邮箱分发系统：收信（Email Routing）+ 发信（多服务商可插拔）+ 账号分发（邀请码 / 批量开户）+ 规则分发（Telegram / Webhook / 外部邮箱转发）。
+
+参考设计：[Cloud Mail](https://github.com/maillab/cloud-mail) / [doc.skymail.ink](https://doc.skymail.ink)。本项目为独立实现，全栈 TypeScript。
+
+![登录页 · 云层背景](docs/preview/09-login.png)
+
+<details>
+<summary>更多界面预览（点击展开）</summary>
+
+| 收件箱 | 写信 |
+|---|---|
+| ![收件箱](docs/preview/01-inbox.png) | ![写信](docs/preview/02-compose.png) |
+| 邮箱地址 | 发信服务商 |
+| ![邮箱地址](docs/preview/03-addresses.png) | ![发信服务商](docs/preview/04-providers.png) |
+| 分发规则 | 分析 |
+| ![分发规则](docs/preview/05-rules.png) | ![分析](docs/preview/06-analytics.png) |
+| 管理后台 | 系统设置 |
+| ![管理后台](docs/preview/07-admin.png) | ![系统设置](docs/preview/08-system.png) |
+
+![移动端](docs/preview/10-mobile.png)
+
+</details>
+
+---
+
+## 已验证清单
+
+| 项 | 结果 |
+|---|---|
+| Worker TypeScript 类型检查（`tsc --noEmit`） | 通过，0 error |
+| Worker 打包（esbuild bundle） | 通过，235 KB |
+| 前端生产构建（Vite + Tailwind v4） | 通过，CSS 28 KB / JS 97 KB |
+| 冒烟测试（12 项）+ 域名解析回归（11 项）+ 管理员保护（16 项） | 39 passed, 0 failed |
+| 界面预览截图 | 10 张（含移动端），UI 区 0 个蓝紫像素 |
+
+冒烟测试覆盖：口令哈希与校验、JWT 签发/验签/过期拒绝、服务商优先级调度、故障自动转移、指定通道（pinned）、全部失败与无通道的兜底报错。
+
+---
+
+## 一、架构选型：为什么是 TypeScript 而不是 JavaScript
+
+| 维度 | TypeScript（选定） | JavaScript |
+|---|---|---|
+| Workers Bindings | `Env` 接口把 DB / KV / R2 / SEND_EMAIL 全部类型化，写错 binding 名编译期就报错 | 只能在运行时炸 |
+| 发信服务商适配器 | `MailProvider` 接口约束 7 个适配器签名一致，新增服务商不可能漏字段 | 靠人肉对齐 |
+| Hono 路由 | `c.req.json()` / `c.json()` 端到端类型推导 + RPC 类型共享 | 无 |
+| D1 结果 | `T | null` 显式处理空行，配合自定义 `queryOne<T>()` | 隐式 any，拼错列名才发现不了 |
+| 规模 | 单仓库多包，重构安全 | 千行以上开始失控 |
+
+结论：**全栈 TS**。JS 唯一优势是省掉构建，但 Workers 本来就走 wrangler 构建（esbuild），这点优势不存在。
+
+## 二、整体架构
+
+```
+                          ┌───────────────────────────────────────┐
+   浏览器 / 移动端  ─────▶ │  Cloudflare Workers (Hono 4, TS)      │
+   Vue3 + Tailwind        │  ├─ /api/*        REST + JWT + RBAC   │
+   (静态资源 assets)       │  ├─ /*           SPA 静态托管         │
+                          │  ├─ email()      Email Routing 收信    │
+   Cloudflare Email  ────▶│  └─ scheduled()  日清 / 配额重置       │
+   Routing (MX)           └───────────────┬───────────────────────┘
+                                          │
+        ┌─────────────────┬───────────────┼────────────────┬──────────────┐
+        ▼                 ▼               ▼                ▼              ▼
+    D1 (SQLite)        KV              R2            发信服务商        通知出口
+    用户/地址/邮件     会话/限流/配置    附件存储        Resend          Telegram
+    服务商/规则/日志                                SendGrid          Webhook
+                                                   Mailgun           转发邮箱
+                                                   Brevo
+                                                   Postmark
+                                                   Cloudflare Email Service
+                                                   noop（自测）
+```
+
+### 目录
+
+```
+henna/
+├── worker/                       # 后端：Cloudflare Workers
+│   ├── src/
+│   │   ├── index.ts              # fetch / email / scheduled 三入口
+│   │   ├── env.ts                # Env bindings 类型
+│   │   ├── db/schema.ts          # D1 建表 + 幂等迁移
+│   │   ├── lib/                  # jwt / crypto / http / mime / response
+│   │   ├── middleware/auth.ts    # JWT 鉴权 + RBAC + API Key
+│   │   ├── providers/             # ★ 发信服务商适配器（可插拔）
+│   │   │   ├── types.ts          #   MailProvider 统一接口
+│   │   │   ├── resend.ts  sendgrid.ts  mailgun.ts
+│   │   │   ├── brevo.ts   postmark.ts  cloudflare.ts  noop.ts
+│   │   │   └── index.ts          #   注册表 + failover/round-robin/指定
+│   │   ├── routes/               # auth / mailbox / message / send
+│   │   │                         # provider / rule / admin / openapi
+│   │   └── email/receive.ts      # 入站 MIME 解析与落库
+│   ├── wrangler.jsonc
+│   └── package.json
+├── web/                          # 前端：Vue 3 + Vite + Tailwind CSS v4
+│   └── src/{views,components,api.ts,store.ts}
+├── .github/workflows/deploy.yml  # 部署方式一：GitHub Actions
+├── scripts/deploy.sh             # 部署方式二：一键 CLI 脚本
+└── scripts/seed.ts               # 可选：灌入演示数据
+```
+
+## 三、UI 方案：Tailwind CSS（而非 Element UI）
+
+- Workers 静态资源按体积计费传输，Element Plus 全量组件库 + 主题 CSS 明显更重；Tailwind v4 只产出用到的 utility。
+- 需求明确要求**不要蓝紫渐变**，Tailwind v4 的 `@theme` 可以直接改设计令牌（色板、圆角、字体），改一套主题只动一个文件；Element Plus 要覆盖大量 `--el-*` 变量。
+- 本系统 90% 界面是列表 / 表单 / 卡片，Tailwind 手写这些比拖组件库更可控。
+
+设计令牌（暖赭 henna 色系，无蓝紫渐变）：
+
+```css
+@theme {
+  --color-henna-500: #b4462f;   /* 主色 · 海娜赭红 */
+  --color-clay-500:  #c97b3c;   /* 辅色 · 陶土橙 */
+  --color-ink-900:   #1c1917;   /* 墨底 */
+  --color-sand-50:   #faf6f1;   /* 米白底 */
+  --color-jade-500:  #3f7d63;   /* 状态色 · 墨绿 */
+}
+```
+
+## 四、发信服务商：可配置、可切换、可容灾
+
+服务商配置存在 D1 的 `mail_provider` 表（API Key 加密存 KV/D1 secret），运行时动态装配，改配置不需要重新部署。
+
+统一接口：
+
+```ts
+export interface MailProvider {
+  readonly kind: ProviderKind;          // resend | sendgrid | ...
+  send(msg: OutgoingMail, cfg: ProviderConfig, env: Env): Promise<SendResult>;
+}
+```
+
+调度策略（`mail_provider.strategy`）：
+
+| 策略 | 行为 |
+|---|---|
+| `priority` | 按 `weight` 降序依次尝试，第一个成功即返回，失败自动 failover 到下一个 |
+| `round_robin` | 在启用集合中轮询，平摊配额（Resend 免费 3000/月，可叠加多家） |
+| `pinned` | 固定在某一封发信请求上指定 `providerId` |
+
+支持：单发、群发（多收件人逐个投递）、附件（base64 → multipart）、HTML/纯文本双版本、自定义 `from` 域名、发送结果落 `mail_log` 表。
+
+## 五、部署：两种方式，全程非手动
+
+两种方式都**不需要在 Cloudflare Dashboard 点鼠标**，D1 / KV / R2 都是脚本自动创建并回写 ID。
+
+### 方式一 · GitHub Actions（推荐，push 即部署）
+
+工作流已就位：`.github/workflows/deploy.yml`，默认分支推送即触发，无需任何手动操作。
+
+在仓库 `Settings → Secrets and variables → Actions` 配置（**Secrets 或 Variables 均可**，工作流两者都读）：
+
+| 名称 | 说明 | 必填 |
+|---|---|---|
+| `CLOUDFLARE_API_TOKEN` | Cloudflare API 令牌 | ✓ |
+| `CLOUDFLARE_ACCOUNT_ID` | 账户 ID | ✓ |
+| `ADMIN` | 管理员邮箱，如 `admin@your.domain` | ✓ |
+| `DOMAIN` | **必须是 JSON 数组**，如 `["your.domain"]` | ✓ |
+| `JWT_SECRET` | 会话签名密钥，**随便打一个别人猜不到的字符串即可**（见下方说明） | ✓ |
+| `NAME` | Worker 名称，默认 `mango-mail` | |
+| `CUSTOM_DOMAIN` | 自定义域名，如 `mail.your.domain` | |
+| `D1_DATABASE_ID` | 已有 D1 则填，留空自动创建 | |
+| `KV_NAMESPACE_ID` | 已有 KV 则填，留空自动创建 | |
+| `R2_BUCKET_NAME` | 附件桶名，**留空自动创建** `mango-mail-r2`；账户没开通 R2 则自动跳过（详见上方） | |
+
+### 🎨 站点主题（运行时换肤）
+
+在「系统设置 → 主题」里改，无需重新构建、无需重新部署。
+
+| 项 | 说明 |
+|---|---|
+| 主色 | 自动推导 50~700 色阶；过亮时按钮文字自动转深色保证对比度 |
+| 点缀色 | 警告 / 提示类标签 |
+| 页面底色 | 推导 sand 50~300，页面底色始终最浅 |
+| 卡片圆角 | 0~28px |
+
+六个预设：暖赭（默认）/ 陶土 / 墨黑 / 森绿 / 酒红 / 琥珀。
+也可以直接填 hex 自由配色，面板会实时显示推导出的 50~700 色阶。
+
+管理员保护：邮箱前缀为 `admin` 的账号（如 `admin@example.com`）恒为管理员，
+后台无法降级、邀请码也无法覆盖。若历史上已被降级，**重新登录即自动恢复**
+—— 降级后唯一能改回管理员的入口就是后台本身，所以这条自愈写在登录路径上。
+
+原理：Tailwind v4 的 `@theme` 虽是编译期的，但它的值可以是 `var()`。
+`--color-henna-500` 指向 `--brand-500`，而 CSS 变量在运行时解析，
+所以 JS 改写 `:root` 上的 `--brand-500` 就能实时换肤。
+透明度写法（`bg-henna-500/10`）会编译成 `color-mix(... var(--color-henna-500) ...)`，
+同样运行时解析，一并生效。
+
+### 🏠 落地页（纯前端）
+
+`landing/index.html` —— **单文件、零依赖、零构建**，双击就能打开。
+构建时会复制到 `dist/landing.html`，部署后访问 `/landing.html`；
+登录页底部有「返回首页」入口。
+
+调性是 **vibe coding 项目**：诚实、有点自嘲，过程比结果好玩。
+标题是「跟 AI 聊出來的信箱系統」，数据条写「1 + 1（我和 AI）」，
+而不是「99.9% SLA」那类企业话术。
+
+| 区块 | 内容 |
+|---|---|
+| Hero | 跟 AI 聊出來的信箱系統 + 真实对话气泡卡片 |
+| 数据条 | 1+1 · 8 個通道 · 39 項測試 · $0 |
+| 能做什麼 | 6 张卡片（收信 / 發信 / 多地址 / 規則 / 邀請碼 / 全端 TS） |
+| 技術棧 | Workers · D1 · KV · R2 · Hono · Vue 3 · Tailwind v4 |
+| 怎麼寫出來的 | 6 步循环：說需求 → 它寫 → 推送 → 報紅 → 貼報錯 → 再來 |
+| 踩過的坑 | 6 个真实 bug + 修法 |
+| 用在哪 | 註冊服務 / 專案告警 / 課程社團 / 分給朋友 |
+| 收件匣 | 4 封日常邮件 |
+| CTA | 深色横幅，标语「也想試試 vibe coding 嗎」 |
+
+「踩過的坑」那 6 条全是本项目真实遇到并修掉的：
+正則改 JSON 寫壞轉義引號、`type="email"` 攔下整個表單、
+`JSON.parse` 收到陣列拋異常、登錄頁被套進根佈局、
+`$(curl)` 在 `set -e` 下掐斷重試、主題色新舊值順序寫反。
+
+实现要点：
+
+- **背景用 SVG 滤镜**（`feTurbulence` + `feDisplacementMap`）而非 WebGL，
+  不支持的设备也不会白屏，且不需要任何 JS
+- **favicon 用圆角版**（白底 + 22% 圆角遮罩）内联为 64px PNG；
+  外链原图是直角，浏览器标签上会显得硬
+- **logo 三处（导航 / CTA / 页脚）都用外链 + `onerror` 回退到内联 base64**，
+  离线打开或外链失效都不会变裂图。回退源只在 `<head>` 存一份
+- 入场动画三层保险：`IntersectionObserver` + `scroll` 补扫 + 250ms 定时扫描。
+  只靠 IO 的话，快速滚动或锚点跳转会让中间元素整段错过回调而**永远不显示**
+- 全站暖色（米白 / 暖赭 / 陶土），无金色、无蓝紫
+
+### 🔒 导航权限
+
+| 角色 | 可见页面 |
+|---|---|
+| 普通用户 | 收件箱 · 写信 · 账户设置 |
+| 管理员 | 上面三项 + 邮箱地址 · 发信服务商 · 分发规则 · 发信日志 · 分析 · 管理后台 · 系统设置 |
+
+普通用户直接访问管理路径会被路由守卫送回收件箱；真正的权限由后端
+`adminOnly` 中间件保证，前端收窄只是为了不暴露入口。
+
+**登录页不套布局**：`App.vue` 只是根组件（RouterView + 全局 Toast），
+侧边栏 / 移动端顶栏 / 写信按钮都在 `Layout.vue` 里由路由挂载。
+所以未登录时看到的是干净的登录页，不会有侧边栏残留。
+
+### 📬 收件箱 vs 全部收件箱
+
+这是两个不同的页面，不要搞混：
+
+| 页面 | 路径 | 谁能进 | 看到什么 |
+|---|---|---|---|
+| **收件箱** | `/` | 所有人 | **只看自己的** |
+| **全部收件箱** | `/all` | 仅管理员 | 全站所有人的信，可按用户筛选 |
+
+之前管理员在 `/` 会看到全站所有人的信 —— 既不符合「收件箱」的直觉，
+也让自己找不到自己的信。现在**默认一律只看自己的，管理员也不例外**；
+要看全部走独立的 `/all`，后端靠 `scope=all` 区分，且仅管理员生效
+（普通用户传了也按自己的返回）。
+
+顺带修了个越权：`/message/:id/read` 和 `/:id/star` 之前**完全没校验归属**，
+任何人都能改别人的已读和星标状态。现在统一走 `assertOwn`。
+
+### 🗂 页面合并
+
+管理项太多，把相关的合并成带 tab 的汇总页（旧路径保留重定向，不会 404）：
+
+| 页面 | 路径 | 合并了什么 |
+|---|---|---|
+| **邮箱** | `/mail` | 邮箱地址 · 发信日志 · 分析 |
+| **站点管理** | `/manage` | 发信服务商 · 分发规则 · 用户与统计 · 系统设置 |
+| **邀请码** | `/invites` | 独立成页（从管理后台拆出） |
+
+邮箱地址 → 发信日志 → 分析本来就是同一条链路（先有地址、用它发信、看效果），
+分开成三个菜单项要在侧边栏来回跳。邀请码反过来要独立 —— 它是高频操作，
+塞在管理后台里每次都得先翻过一堆统计卡片。
+
+### 🔐 发信只能用自己的地址
+
+`send.ts` 的 guard 里原本给 admin 留了另一条分支：
+**只要发件域名在托管列表内就放行**，于是可以用任何人的地址发信。
+现在统一按「该地址属于本人」校验，管理员也不例外。
+
+前端同步：写信页的「发件人」下拉走 `/mailbox?scope=mine`，
+管理员也不会在下拉里看到别人的邮箱。
+
+### 🎨 logo 只保留信封
+
+原图是「信封 + 下方 `henna` 文字」的组合标。现在**只保留信封图标**，
+品牌名由界面文字负责（侧边栏、登录页、落地页导航都已有 `mango-mail` 字样），
+图标里再带一遍会重复。
+
+做法是按行扫描 alpha 通道，定位信封底边（y=249）与文字之间的空白带后裁切。
+受影响的产物全部重出：`logo.png` / `logo-512.png` / `favicon.ico` /
+`apple-touch-icon.png` / `icon-192.png` / `icon-512.png`。
+
+宽高比从 1.28:1 变成 1.49:1，按 height 显示会变胖，所以前端尺寸同步调小一档
+（侧边栏 `h-9 → h-7`，登录页 `h-11/14 → h-10/12`）。
+
+落地页的内联 logo 改成只在 `<head>` 存一份 base64、由脚本赋给三处 `<img>` ——
+之前每处各内联一份，文件被撑到 1 MB。
+
+### 🕐 注册时间显示错误（已修）
+
+账户设置页的「注册于」写成了 `fmtTime(me.id && Date.now())` ——
+`me.id` 为真时整个表达式等于 `Date.now()`，显示的**永远是打开页面的那一刻**，
+每刷新一次时间就跳一次。同时后端 `/me` 压根没返回 `created_at`，
+就算前端写对了也拿不到值。
+
+两边都修了：`/me` 补上 `created_at`，前端改用真实值；
+并新增 `fmtDate`（含年份），避免跨年后把「去年 12/30」显示成 `12/30`。
+
+### ✉️ 邮箱后缀输入
+
+登录 / 注册时邮箱框只填用户名，域名由站点配置决定：
+
+- **只有一个域名** —— 后缀固定显示在框内右侧，不可选
+- **有多个域名** —— 后缀变成下拉，**默认收起**，点箭头展开选择
+
+一旦自己输入了 `@`，就切换为「完整地址」模式：后缀提示收起，以你填的为准，
+不会被拼接破坏（要登录外部域名邮箱时有用）。
+
+> 输入框用的是 `type="text"` + `inputmode="email"` 而非 `type="email"`。
+> 原生 email 校验会在只填用户名（还没拼后缀）时判定非法并**拦下整个表单提交**，
+> 表现为点登录没反应。移动端键盘仍是邮箱布局。
+
+### 🎨 登录页与品牌
+
+未登录时是**左右分栏**：左半边背景，右半边登录面板。
+
+登录背景有三种模式，在「系统设置 → 个性化」里切换：
+
+| 模式 | 说明 |
+|---|---|
+| `builtin`（默认） | WebGL 云层（Aceternity UI · Cloud Shader），天空/云色、云量、漂移速度都可调；不支持 WebGL 的设备自动回退到 CSS 版晴空 |
+| `custom` | 自定义图片，可填在线链接或本地上传（优先写对象存储，无存储时 ≤512KB 内联保存） |
+| `api` | 每日一图接口，每次刷新重新请求。注意会向第三方暴露访客 IP |
+
+图片加载失败会自动回退到内置云层，不会白屏。右侧面板的不透明度可调（40%~100%）。
+
+**内置云层**来自 [Aceternity UI 的 Cloud Shader](https://ui.aceternity.com/components/cloud-shader)：
+GLSL 里每朵云是非对称包络（顶圆顶、底平），填充域扭曲的 billow 噪声，
+再往上采样一次密度近似自阴影，另有薄卷积云条、太阳光晕与远近视差。
+尊重系统的「减弱动态效果」设置（开启后云静止），页面不可见时不渲染。
+
+三个预设配色：默认晴空 / 暮色 / 暖赭（品牌色）。
+
+品牌资源在 `web/public/`：
+
+| 文件 | 用途 |
+|---|---|
+| `logo.png` | 透明底原图 |
+| `logo-512.png` | 界面用（登录页、侧边栏、README） |
+| `favicon.ico` | 浏览器标签，圆角方形（16/32/48） |
+| `apple-touch-icon.png` | iOS 添加到主屏幕（180） |
+| `icon-192.png` / `icon-512.png` | PWA 图标，同为圆角 |
+
+换 logo 时用 `logo.png` 覆盖后重新生成其余尺寸即可，圆角半径是图标边长的 22%。
+
+### 🔌 自行绑定 R2（可选，随时可补）
+
+R2 免费额度需要绑卡，所以它是**唯一可选**的资源。不绑也能正常部署。
+
+**想开启附件存储，三步：**
+
+1. Cloudflare 控制台 → **R2** → 创建桶（已有桶可跳过）
+2. 仓库 `Settings → Secrets and variables → Actions` 加一项：
+   ```
+   R2_BUCKET_NAME = 你的桶名
+   ```
+   （留空则由脚本自动创建 `mango-mail-r2`）
+3. 重新运行一次 deploy 工作流
+
+绑定是否生效，登录后在**账户设置**页顶部能看到「附件存储（R2）：已启用 / 未启用」；
+未启用时该页会直接给出上面这段操作指引。
+
+> 未启用 R2 时：收到的邮件附件只登记文件名与大小，不保存内容；
+> 收信、发信、规则分发、账号分发**全部照常工作**，不报错。
+
+> **D1 / KV / R2 都不用你手动创建**，脚本会自动建：
+> 填了 ID 就用你指定的那一个，留空则自动查找同名资源、找不到就新建。
+> R2 免费额度需绑卡，账户没开通时会自动跳过并删掉配置段——收信、发信、规则分发照常工作，
+> 只是附件只保存文件名等元信息、不保存内容。
+
+> `DOMAIN` 这一项最容易填错。必须是 **JSON 数组格式** `["your.domain"]`，
+> 写成 `your.domain` 或 `[your.domain]` 都会在部署前的校验步骤直接报错退出——这是刻意的，早失败比部署完才发现问题好。
+
+### 方式二 · 一键 CLI 脚本（本地 / 服务器）
+
+```bash
+export CLOUDFLARE_API_TOKEN=xxx
+export CLOUDFLARE_ACCOUNT_ID=xxx
+export JWT_SECRET=web3hennamail      # 随便打，别让别人知道就行
+export ADMIN=admin@your.domain
+export DOMAIN='["your.domain"]'      # 必须是 JSON 数组
+./scripts/deploy.sh            # 校验 → 构建 → 建资源 → 部署 → 初始化
+```
+
+脚本幂等：资源已存在则复用，重复执行安全。
+
+> **关于 `JWT_SECRET`：不用生成 32 位随机串。**
+> 它只用来给登录会话签名，值本身多长、多随机并不重要，**关键是只有你自己知道**。
+> 直接填 `web3hennamail` 这种随手打的字符串完全够用，也好记。
+> 唯一要注意的是部署后别改——改了会让所有已登录用户被迫重新登录。
+> 它同时是 `/api/init/<JWT_SECRET>` 这条初始化接口的口令，所以别泄露。
+
+### 部署后的收尾（DNS 侧， unavoidable）
+
+1. Cloudflare 控制台 → 域名 → **Email → Email Routing**，开启并把 MX 指向 Cloudflare。
+2. Routing rules 中把目标地址 / Catch-all → **Send to Worker** → 选 `mango-mail`。
+3. 访问 `https://<你的域名>/api/init/<JWT_SECRET>` 完成建表（脚本与 Actions 已自动调用，也可手动兜底）。
+   用本文的示例值就是：`https://<你的域名>/api/init/web3hennamail`
+   若 CI 日志出现 `::warning:: 自动初始化未成功`，多半是 workers.dev 主机名 DNS 还没生效——
+   Worker 其实已经部署好了，等 2~3 分钟手动打开上面那个地址即可，不需要重新部署。
+
+## 六、本地开发
+
+```bash
+cd worker && npm i && npm run d1:local   # 本地 SQLite 建表
+cd worker && npm run dev                 # http://localhost:8787
+cd web    && npm i && npm run dev        # http://localhost:5173 (代理 /api 到 8787)
+```
+
+首次注册的用户自动成为 `admin`。
+
+## 七、界面预览
+
+顶部已列出全部页面。编号对应关系：
+
+| 编号 | 页面 |
+|---|---|
+| `01-inbox` | 收件箱 |
+| `02-compose` | 写信 · 分发 |
+| `03-addresses` | 邮箱地址 |
+| `04-providers` | 发信服务商 |
+| `05-rules` | 分发规则 |
+| `06-analytics` | 分析 |
+| `07-admin` | 管理后台 |
+| `08-system` | 系统设置 |
+| `09-login` | 登录页（云层背景） |
+| `10-mobile` | 移动端 |
+| `11-sidebar-collapsed` | 侧边栏收起 |
+| `12-email-field` | 邮箱后缀输入（单域名 / 多域名收起 / 展开） |
+| `13-nav-permission` | 未登录纯净登录页 + 普通用户收窄导航 |
+| `14-all-inbox` | 全部收件箱（管理员专用，按用户筛选） |
+| `15-mail-hub` / `16-invites` | 邮箱汇总页（地址 / 日志 / 分析）、邀请码独立页 |
+| `20-landing-hero` / `21-landing-why` / `22-landing-cta` | 落地页（首屏 / 為什麼寫 / CTA） |
+
+预览图由 `tools/shot-mock.mjs` 用 mock 数据渲染，**非线上实例**。
+登录页的云层由 `tools/render-shader.py` 在 CPU 上复算同一份 GLSL 后合成
+（沙盒内的 Chromium 没有可用的 WebGL）。
+
+## 八、开放 API
+
+所有 `/api/*` 均可用 `Authorization: Bearer <jwt>` 或 `X-Api-Key: <key>` 调用：
+
+```bash
+curl -X POST https://<domain>/api/send \
+  -H "Authorization: Bearer $TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"from":"a@your.domain","to":["b@example.com"],"subject":"hi","html":"<b>hi</b>"}'
+```
+
+## 九、测试
+
+```bash
+cd worker
+npx esbuild src/test/smoke.ts --bundle --format=esm --platform=node --target=node20 --outfile=/tmp/smoke.mjs
+node /tmp/smoke.mjs     # 12 passed, 0 failed
+```
+
+## License
+
+MIT

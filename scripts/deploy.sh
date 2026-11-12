@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ───────────────────────────────────────────────────────────────
-# Henna Mail · 一键部署到 Cloudflare Workers（部署方式二）
+# mango-mail · 一键部署到 Cloudflare Workers（部署方式二）
 #
 # 用法：
 #   export CLOUDFLARE_API_TOKEN=xxxx
@@ -19,7 +19,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-: "${NAME:=henna-mail}"
+: "${NAME:=mango-mail}"
 : "${CLOUDFLARE_API_TOKEN:=${CF_API_TOKEN:-}}"
 : "${CLOUDFLARE_ACCOUNT_ID:=${CF_ACCOUNT_ID:-}}"
 : "${ADMIN:=${ADMIN_EMAIL:-}}"

@@ -242,12 +242,12 @@ const paths: Record<string, string> = {
       :style="collapsed ? { width: '68px' } : { width: sidebarWidth + 'px' }"
     >
       <!-- 头部：点 logo / 名称回首页 -->
-      <RouterLink to="/" class="flex items-center gap-2.5 px-4 py-5" :class="collapsed ? 'justify-center px-2' : ''" title="回首页">
+      <RouterLink to="/" class="flex items-center gap-2 px-4 py-5" :class="collapsed ? 'justify-center px-2' : ''" title="回首页">
         <img src="/logo.png" alt="Mango-Mail" class="h-6 w-auto shrink-0" />
         <div v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
           <div class="inline-flex flex-col items-center">
             <div class="truncate text-sm font-semibold text-ink-900">{{ store.config?.appName ?? 'Mango-Mail' }}</div>
-            <div class="text-[11px] text-ink-500">域名邮箱</div>
+            <div class="text-[11px] text-ink-700">域名邮箱</div>
           </div>
         </div>
       </RouterLink>

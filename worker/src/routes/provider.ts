@@ -128,10 +128,10 @@ provider.post('/:id/test', authRequired, async (c) => {
     {
       from,
       to: [to],
-      subject: `[mango-mail] ${row.name} 连通性测试`,
-      text: '这是一封来自 mango-mail 的连通性测试邮件，收到即表示配置正确。',
+      subject: `[Mango-Mail] ${row.name} 连通性测试`,
+      text: '这是一封来自 Mango-Mail 的连通性测试邮件，收到即表示配置正确。',
       html:
-        '<div style="font-family:sans-serif;padding:24px"><h2 style="color:#b4462f">mango-mail</h2><p>这是一封连通性测试邮件，收到即表示 <b>' +
+        '<div style="font-family:sans-serif;padding:24px"><h2 style="color:#b4462f">Mango-Mail</h2><p>这是一封连通性测试邮件，收到即表示 <b>' +
         row.name +
         '</b> 配置正确。</p></div>',
     },

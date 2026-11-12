@@ -37,7 +37,7 @@ system.get('/config', async (c) => {
   };
   return c.json(
     ok({
-      appName: s.site_title || c.env.APP_NAME || 'mango-mail',
+      appName: s.site_title || c.env.APP_NAME || 'Mango-Mail',
       domains: parseDomains(c.env),
       allowRegister: isTrue(s.allow_register) && c.env.ALLOW_REGISTER === 'true',
       strategy: c.env.PROVIDER_STRATEGY || 'priority',

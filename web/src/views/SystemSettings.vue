@@ -319,7 +319,7 @@ onMounted(load);
       <Section title="基本设置" desc="控制注册与邮箱地址的分配方式">
         <div class="mb-3">
           <label class="label">网站标题</label>
-          <input v-model="s.site_title" class="input" placeholder="mango-mail" />
+          <input v-model="s.site_title" class="input" placeholder="Mango-Mail" />
         </div>
         <div class="space-y-0.5">
           <Toggle v-model="allowRegister" label="开放用户注册" hint="关闭后新用户无法自助注册" />

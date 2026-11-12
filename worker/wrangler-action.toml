@@ -1,4 +1,4 @@
-# mango-mail · 部署专用配置模板
+# Mango-Mail · 部署专用配置模板
 #
 # 这是部署时使用的模板，含占位符，由 CI / deploy.sh 用 sed 填充。
 # 本地开发请用 wrangler.jsonc（那份是真实配置，不含占位符）。
@@ -36,7 +36,7 @@ bucket_name = "${R2_BUCKET_NAME}"
 enabled = true
 
 [vars]
-APP_NAME = "mango-mail"
+APP_NAME = "Mango-Mail"
 JWT_SECRET = "${JWT_SECRET}"
 ADMIN_EMAIL = "${ADMIN}"
 # 注意：这里的引号会被 sed 连同占位符一起替换成裸数组

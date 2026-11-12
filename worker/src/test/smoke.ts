@@ -52,7 +52,7 @@ function makeEnv(handler: (url: string, init: RequestInit) => Response): Env {
     KV: {} as KVNamespace,
     R2: {} as R2Bucket,
     ASSETS: {} as Fetcher,
-    APP_NAME: 'mango-mail',
+    APP_NAME: 'Mango-Mail',
     JWT_SECRET: SECRET,
     ADMIN_EMAIL: 'admin@x.com',
     MAIL_DOMAINS: '["henna.dev"]',

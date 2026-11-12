@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="docs/preview/logo.png" alt="mango-mail" width="180" />
-  <h1>mango-mail</h1>
-  <p><b>边缘邮箱分发系统</b> · Cloudflare Workers · 全栈 TypeScript</p>
+  <img src="docs/preview/logo.png" alt="Mango-Mail" width="180" />
+  <h1>Mango-Mail</h1>
+  <p><b>域名邮箱</b> · Cloudflare Workers · 全栈 TypeScript</p>
 </div>
 
 一个跑在 Cloudflare Workers 上的邮箱分发系统：收信（Email Routing）+ 发信（多服务商可插拔）+ 账号分发（邀请码 / 批量开户）+ 规则分发（Telegram / Webhook / 外部邮箱转发）。
@@ -290,7 +290,7 @@ export interface MailProvider {
 ### 🎨 logo 只保留信封
 
 原图是「信封 + 下方 `henna` 文字」的组合标。现在**只保留信封图标**，
-品牌名由界面文字负责（侧边栏、登录页、落地页导航都已有 `mango-mail` 字样），
+品牌名由界面文字负责（侧边栏、登录页、落地页导航都已有 `Mango-Mail` 字样），
 图标里再带一遍会重复。
 
 做法是按行扫描 alpha 通道，定位信封底边（y=249）与文字之间的空白带后裁切。

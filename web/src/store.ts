@@ -27,7 +27,7 @@ export async function loadConfig(): Promise<void> {
     store.config = await api.get<PublicConfig>('/system/config');
   } catch {
     store.config = {
-      appName: 'mango-mail',
+      appName: 'Mango-Mail',
       domains: [],
       allowRegister: true,
       strategy: 'priority',

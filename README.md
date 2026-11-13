@@ -1,6 +1,8 @@
-# Mango-Mail
-
-**域名邮箱** · Cloudflare Workers · 全栈 TypeScript
+<div align="center">
+  <img src="web/public/logo.png" alt="Mango-Mail" width="180" />
+  <h1>Mango-Mail</h1>
+  <p><b>域名邮箱</b> · Cloudflare Workers · 全栈 TypeScript</p>
+</div>
 
 一个跑在 Cloudflare Workers 上的邮箱分发系统：收信（Email Routing）+ 发信（多服务商可插拔）+ 账号分发（邀请码 / 批量开户）+ 规则分发（Telegram / Webhook / 外部邮箱转发）。
 
@@ -9,8 +11,6 @@
 全免费额度可跑：Workers Free + D1 + KV + R2（R2 可选）+ Resend 免费版（每月 3000 封）。
 
 部署完成后的面板：
-
-![PixPin_2026-11-13_23-00-56.png](https://tuchuang-260328-cloudflare-imgbed.pages.dev/file/1794582141193_PixPin_2026-11-13_23-00-56.png)
 
 ![部署完成后的面板](docs/images/hero-panel.png)
 

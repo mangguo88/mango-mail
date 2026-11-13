@@ -36,9 +36,10 @@
     "ALLOW_REGISTER": "true",
     "DEFAULT_QUOTA": "50",
     "PROVIDER_STRATEGY": "priority"
-  },
-
-  "triggers": {
-    "crons": ["0 16 * * *"]
   }
+  // 注意：这里故意不写 triggers.crons。
+  // 免费版账号最多 5 个 cron 触发器，aa 的账号已经满了，再加一个会报 10072 导致整个部署失败。
+  // 去掉后收信、发信都正常，只是每天定时日清 / 配额重置不跑。
+  // 以后腾出一个 cron 名额（删掉别的 Worker 上不用的定时任务）再把下面这段加回来：
+  // "triggers": { "crons": ["0 16 * * *"] }
 }

@@ -10,7 +10,7 @@
 
 部署完成后的面板：
 
-https://tuchuang-260328-cloudflare-imgbed.pages.dev/file/1794582141193_PixPin_2026-11-13_23-00-56.png
+![PixPin_2026-11-13_23-00-56.png](https://tuchuang-260328-cloudflare-imgbed.pages.dev/file/1794582141193_PixPin_2026-11-13_23-00-56.png)
 
 ![部署完成后的面板](docs/images/hero-panel.png)
 

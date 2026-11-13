@@ -4,6 +4,14 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-01-09",
   "compatibility_flags": ["nodejs_compat"],
+  // Workers Builds（面板直连 Git）部署用：绑定不在这里写 ID，
+  // 在 Cloudflare Dashboard → Workers → mango-mail → Settings → Bindings 里加：
+  //   D1 绑定名 DB，选你的库（新部署用 mango-mail-db，接管 henna 旧库就选 henna-mail-db）
+  //   KV 绑定名 KV，选你的命名空间（新部署用 mango-mail-kv）
+  //   R2 绑定名 R2，选你的桶（新部署用 mango-mail-r2，没有 R2 也可以不绑，附件功能降级）
+  // 这样公开仓库里不含任何资源 ID，别人 Fork 后照样能部署。
+  // 本地开发如需 D1/KV，在本地另填一份 wrangler.jsonc，不要推上去。
+  "keep_vars": true,
 
   "assets": {
     "directory": "./dist",
@@ -11,35 +19,18 @@
     "not_found_handling": "single-page-application"
   },
 
-  "d1_databases": [
-    {
-      "binding": "DB",
-      "database_name": "mango-mail-db",
-      "database_id": "REPLACE_D1_DATABASE_ID"
-    }
-  ],
-
-  "kv_namespaces": [
-    {
-      "binding": "KV",
-      "id": "REPLACE_KV_NAMESPACE_ID"
-    }
-  ],
-
-  "r2_buckets": [
-    {
-      "binding": "R2",
-      "bucket_name": "mango-mail-r2"
-    }
-  ],
-
   "observability": {
     "enabled": true
   },
 
   "vars": {
     "APP_NAME": "Mango-Mail",
-    "JWT_SECRET": "REPLACE_JWT_SECRET",
+    // JWT_SECRET 不要写在这里，不要推到公开仓库。
+    // 在 Cloudflare Dashboard → Workers → mango-mail → Settings → Variables → Add Secret 里加，
+    // 名字就叫 JWT_SECRET，值随便打一个别人猜不到的字符串，不能含 ? % # / \ | &，部署后别改。
+    // 它同时是 /api/init/<JWT_SECRET> 的口令。
+    // ADMIN_EMAIL / MAIL_DOMAINS 也建议在面板 Variables 里改，keep_vars=true 会保住面板里的值，
+    // 不会被下面这两行示例值覆盖。
     "ADMIN_EMAIL": "admin@example.com",
     "MAIL_DOMAINS": "[\"example.com\"]",
     "ALLOW_REGISTER": "true",

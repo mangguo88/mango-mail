@@ -1,0 +1,13 @@
+{
+    "name": "mango-mail",
+    "private": true,
+    "scripts": {
+        "build": "cd web && npm install && npm run build && rm -rf ../worker/dist && cp -r dist ../worker/dist",
+        "deploy:builds": "cd worker && npm install && npx wrangler deploy",
+        "dev:web": "cd web && npm run dev",
+        "dev:worker": "cd worker && npm run dev",
+        "migrate": "cd worker && npx wrangler d1 migrations apply mango-mail-db --remote"
+    },
+    "type": "module",
+    "version": "1.0.0"
+}

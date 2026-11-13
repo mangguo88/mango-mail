@@ -7,6 +7,7 @@
     "dev": "wrangler dev --port 8787",
     "build": "tsc --noEmit",
     "deploy": "wrangler deploy",
+    "deploy:builds": "wrangler deploy",
     "migrate": "wrangler d1 migrations apply mango-mail-db --remote",
     "migrate:local": "wrangler d1 migrations apply mango-mail-db --local",
     "secret:jwt": "wrangler secret put JWT_SECRET",

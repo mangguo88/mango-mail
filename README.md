@@ -1,6 +1,5 @@
 <div align="center">
-  <img src="web/public/logo.png" alt="Mango-Mail" width="180" />
-  <h1>Mango-Mail</h1>
+  <img src="docs/preview/logo.png" alt="Mango-Mail" width="360" />
   <p><b>域名邮箱</b> · Cloudflare Workers · 全栈 TypeScript</p>
 </div>
 

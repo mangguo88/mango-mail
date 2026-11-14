@@ -16,14 +16,15 @@ function toggleSidebar() {
 }
 
 /**
- * 侧栏宽度：默认 200px，拖右侧分界线可改，170~320px 之间，
+ * 侧栏宽度：默认 240px，拖右侧分界线可改，170~320px 之间，
  * 170px 是「邮箱列表」那一行能完整显示的最小宽度，记在本地，刷新后还保持你拖过的宽度。
+ * 默认 240px 是让头部 logo + Mango-Mail 名称完整显示的宽度（200px 时名称会被截成 Mango-M…）。
  */
 const SIDEBAR_WIDTH_KEY = 'henna.sidebar.width';
 const clampPx = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 function readSidebarWidth() {
   const v = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
-  return Number.isFinite(v) && v > 0 ? clampPx(v, 170, 320) : 200;
+  return Number.isFinite(v) && v > 0 ? clampPx(v, 170, 320) : 240;
 }
 const sidebarWidth = ref(readSidebarWidth());
 const sidebarResizing = ref(false);

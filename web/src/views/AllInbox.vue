@@ -119,7 +119,7 @@ const LIST_WIDTH_KEY = 'henna.list.width';
 const clampListPx = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 function readListWidth() {
   const v = Number(localStorage.getItem(LIST_WIDTH_KEY));
-  return Number.isFinite(v) && v > 0 ? clampListPx(v, 150, 520) : 280;
+  return Number.isFinite(v) && v > 0 ? clampListPx(v, 150, 520) : 340;
 }
 const listWidth = ref(readListWidth());
 const isDesktop = ref(false);

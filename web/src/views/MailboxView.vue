@@ -142,7 +142,7 @@ const LIST_WIDTH_KEY = 'henna.list.width';
 const clampListPx = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 function readListWidth() {
   const v = Number(localStorage.getItem(LIST_WIDTH_KEY));
-  return Number.isFinite(v) && v > 0 ? clampListPx(v, 150, 520) : 280;
+  return Number.isFinite(v) && v > 0 ? clampListPx(v, 150, 520) : 340;
 }
 const listWidth = ref(readListWidth());
 const isDesktop = ref(false);
@@ -184,7 +184,8 @@ function toggleListCollapsed() {
   localStorage.setItem(LIST_COLLAPSED_KEY, listCollapsed.value ? '1' : '0');
 }
 /**
- * 文件夹栏宽：默认 170px，拖右侧分界线可改（100~260px），最小 100px 刚好露出「收件箱」，记在本地；
+ * 文件夹栏宽：默认 220px，拖右侧分界线可改（100~320px），最小 100px 刚好露出「收件箱」，记在本地；
+ * 220px 是让顶部的邮箱地址（admin@151819.xyz）完整显示的宽度（170px 时会被截成 admin@151819.x…）。
  * 点分界线上的箭头收起/展开，收起后留 14px、内容不渲染，不露半个字、不与前面的边线重合，展开恢复原来宽度。
  */
 const FOLDER_WIDTH_KEY = 'henna.folder.width';
@@ -192,7 +193,7 @@ const FOLDER_COLLAPSED_KEY = 'henna.folder.collapsed';
 const clampFolderPx = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 function readFolderWidth() {
   const v = Number(localStorage.getItem(FOLDER_WIDTH_KEY));
-  return Number.isFinite(v) && v > 0 ? clampFolderPx(v, 100, 260) : 170;
+  return Number.isFinite(v) && v > 0 ? clampFolderPx(v, 100, 320) : 220;
 }
 const folderWidth = ref(readFolderWidth());
 const folderCollapsed = ref(localStorage.getItem(FOLDER_COLLAPSED_KEY) === '1');
@@ -206,7 +207,7 @@ function startFolderDrag(e: PointerEvent) {
   const startX = e.clientX;
   const startW = folderWidth.value;
   const move = (ev: PointerEvent) => {
-    folderWidth.value = clampFolderPx(startW + (ev.clientX - startX), 100, 260);
+    folderWidth.value = clampFolderPx(startW + (ev.clientX - startX), 100, 320);
   };
   const up = () => {
     localStorage.setItem(FOLDER_WIDTH_KEY, String(folderWidth.value));

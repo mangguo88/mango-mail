@@ -166,6 +166,16 @@ function startListDrag(e: PointerEvent) {
   window.addEventListener('pointermove', move);
   window.addEventListener('pointerup', up);
 }
+
+/** 分界线上的箭头跟鼠标走：鼠标移到分界线哪里，箭头就显示在哪里；没移过时默认居中 */
+const folderArrowY = ref<number | null>(null);
+const listArrowY = ref<number | null>(null);
+function dividerArrowY(e: PointerEvent): number {
+  const el = e.currentTarget as HTMLElement;
+  const r = el.getBoundingClientRect();
+  return Math.min(Math.max(e.clientY - r.top, 10), Math.max(10, r.height - 10));
+}
+
 /** 列表折叠：点分界线上的箭头收起/展开，收起后留 14px、内容不渲染，不露半个字、不与前面的边线重合；宽度记在本地，展开恢复原来宽度 */
 const LIST_COLLAPSED_KEY = 'henna.list.collapsed';
 const listCollapsed = ref(localStorage.getItem(LIST_COLLAPSED_KEY) === '1');
@@ -259,15 +269,17 @@ watch(
       </nav>
     </aside>
 
-    <!-- 文件夹与列表之间的分界线：拖动改文件夹宽度，点中间的箭头收起/展开文件夹（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
+    <!-- 文件夹与列表之间的分界线：拖动改文件夹宽度，点箭头收起/展开文件夹，箭头跟鼠标走（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
     <div
       v-if="isDesktop"
       class="relative hidden w-[5px] shrink-0 cursor-col-resize touch-none bg-sand-200 transition-colors hover:bg-henna-400 active:bg-henna-500 md:block"
       title="拖动调整文件夹宽度"
       @pointerdown="startFolderDrag"
+      @pointermove="folderArrowY = dividerArrowY($event)"
     >
       <button
         class="absolute left-1/2 top-1/2 z-10 grid h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-henna-200 bg-white text-henna-600 shadow-sm hover:bg-henna-50 hover:text-henna-700"
+        :style="folderArrowY === null ? undefined : { top: folderArrowY + 'px' }"
         :title="folderCollapsed ? '展开文件夹' : '收起文件夹'"
         @click.stop="toggleFolderCollapsed"
         @pointerdown.stop
@@ -330,15 +342,17 @@ watch(
       </div>
     </section>
 
-    <!-- 列表与详情之间的分界线：拖动改列表宽度，点中间的箭头收起/展开列表（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
+    <!-- 列表与详情之间的分界线：拖动改列表宽度，点箭头收起/展开列表，箭头跟鼠标走（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
     <div
       v-if="isDesktop"
       class="relative hidden w-[5px] shrink-0 cursor-col-resize touch-none bg-sand-200 transition-colors hover:bg-henna-400 active:bg-henna-500 md:block"
       title="拖动调整列表宽度"
       @pointerdown="startListDrag"
+      @pointermove="listArrowY = dividerArrowY($event)"
     >
       <button
         class="absolute left-1/2 top-1/2 z-10 grid h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-henna-200 bg-white text-henna-600 shadow-sm hover:bg-henna-50 hover:text-henna-700"
+        :style="listArrowY === null ? undefined : { top: listArrowY + 'px' }"
         :title="listCollapsed ? '展开列表' : '收起列表'"
         @click.stop="toggleListCollapsed"
         @pointerdown.stop

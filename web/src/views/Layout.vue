@@ -46,6 +46,14 @@ function startSidebarDrag(e: PointerEvent) {
   window.addEventListener('pointerup', up);
 }
 
+/** 分界线上的箭头跟鼠标走：鼠标移到分界线哪里，箭头就显示在哪里；没移过时默认居中 */
+const sidebarArrowY = ref<number | null>(null);
+function dividerArrowY(e: PointerEvent): number {
+  const el = e.currentTarget as HTMLElement;
+  const r = el.getBoundingClientRect();
+  return Math.min(Math.max(e.clientY - r.top, 10), Math.max(10, r.height - 10));
+}
+
 const isAdmin = computed(() => store.me?.role === 'admin');
 
 /**
@@ -373,14 +381,16 @@ const paths: Record<string, string> = {
       </div>
     </aside>
 
-    <!-- 侧栏与中间栏之间的分界线：拖动改侧栏宽度，点中间的箭头收起/展开侧栏（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
+    <!-- 侧栏与中间栏之间的分界线：拖动改侧栏宽度，点箭头收起/展开侧栏，箭头跟鼠标走（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
     <div
       class="relative hidden w-[5px] shrink-0 cursor-col-resize touch-none bg-sand-200 transition-colors hover:bg-henna-400 active:bg-henna-500 md:block"
       title="拖动调整侧栏宽度"
       @pointerdown="startSidebarDrag"
+      @pointermove="sidebarArrowY = dividerArrowY($event)"
     >
       <button
         class="absolute left-1/2 top-1/2 z-10 grid h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-sand-300 bg-white text-ink-500 shadow-sm hover:border-henna-200 hover:bg-henna-50 hover:text-henna-700"
+        :style="sidebarArrowY === null ? undefined : { top: sidebarArrowY + 'px' }"
         :title="collapsed ? '展开侧栏' : '收起侧栏'"
         @click.stop="toggleSidebar"
         @pointerdown.stop

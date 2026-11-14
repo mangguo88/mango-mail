@@ -112,6 +112,14 @@ Workers & Pages → **创建应用程序** → **Import a Git repository**（导
 
 > 绑定是部署时用第 2 步的构建变量填进配置文件的，部署时自动加上，面板里只是查看。如果这里是空的，说明构建变量没填或填错了，回去检查再部署一次。**不要只在面板里点「添加绑定」**，那样下次更新代码时会被删掉。
 
+###添加id  先复制创建的kv 、d1 的id值
+在项目中进行绑定 Worker 面板 → 设置 → 构建 → 变量和机密里，加自己的 D1_ID、KV_ID（都选机密）
+
+<img width="1035" height="183" alt="69b0f7e4f748bb65c6fedb4d9a8141d9" src="https://github.com/user-attachments/assets/c8aee919-119a-4a9e-b742-ce95757875e9" />
+
+<img width="809" height="537" alt="dfd7c979300fddce1c77f75cc9f8a09c" src="https://github.com/user-attachments/assets/3b047d86-03db-4ae2-9305-800046f6bef4" />
+
+
 #### 定时任务（Cron 触发器）
 
 当前版本的 `worker/wrangler.jsonc` 里没有 `triggers`（为了避开免费账号 5 个触发器上限报 `10072`），所以部署后 Triggers 里是空的，定时日清不跑。

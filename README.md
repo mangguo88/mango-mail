@@ -26,6 +26,7 @@
 - 一个 Cloudflare 账号（免费版就行），一个已经托管在 Cloudflare 的域名
 - 一个 GitHub 账号
 - 一个 Resend 账号（resend.com，免费版每月 3000 封）
+- 绑定和变量分开放：绑定靠构建变量填进 `worker/wrangler.jsonc` 的占位符，变量只在面板里填（原因见第 2、4、5 步）
 - 全程不用写代码，不用在本地装 Git
 
 > 本教程用的是 **Workers Builds（Cloudflare 面板直连 Git）** 部署，push 代码即自动部署。仓库里旧的 GitHub Actions 方式已停用。
@@ -58,6 +59,15 @@
 
 > R2 是唯一可选的资源：免费额度需要绑卡，不想绑卡可以先不建。没有 R2 也能正常部署，收到的邮件附件只登记文件名与大小、不保存内容，收信、发信、规则分发全部照常工作。以后想开附件存储，随时建桶再绑定就行。
 
+**把 ID 填进构建变量（第一次部署前必须做）**：点进刚建的 D1 数据库详情页，复制「数据库 ID」；点进 KV 命名空间，复制「命名空间 ID」。然后去 Workers → `mango-mail` → 设置 → **构建** → **变量和机密**，点「添加变量」，加下面两个（都选**机密**，值在构建日志里会被打码）：
+
+| 名字 | 值 |
+| --- | --- |
+| `D1_ID` | 刚复制的 D1 数据库 ID |
+| `KV_ID` | 刚复制的 KV 命名空间 ID |
+
+> 为什么要用构建变量：部署时 `wrangler deploy` 会把 Worker 的配置同步成配置文件里的样子，配置文件里没写的绑定会被删掉。只在面板里绑，下次更新代码就没了，登录会报 `internal error`，得重绑。所以 `worker/wrangler.jsonc` 里已经写好了三个绑定的位置，但 D1 / KV 的 ID 只留了占位符（`REPLACE_D1_DATABASE_ID` / `REPLACE_KV_NAMESPACE_ID`），不写真实 ID——仓库是公开的，真实 ID 写进去就公开了，别人 Fork 后也会拿到你的 ID。部署时，部署命令会先跑 `scripts/render-build-config.mjs`，把占位符换成构建变量里的值再部署，绑定每次都会自动重新加上。R2 只要桶名，已经直接写在配置文件里，不用变量。没建 R2 的话，把 `worker/wrangler.jsonc` 里 `r2_buckets` 那段删掉再部署（附件功能会降级，只登记文件名和大小）。以后别人 Fork 这个项目，填自己的两个构建变量就能部署。
+
 ### 第 3 步：建 Worker，连 Git（Workers Builds）
 
 Workers & Pages → **创建应用程序** → **Import a Git repository**（导入 Git 仓库）。
@@ -82,13 +92,15 @@ Workers & Pages → **创建应用程序** → **Import a Git repository**（导
 
 ![构建与部署命令](docs/images/step3-build-settings.png)
 
+> 点部署之前，确认第 2 步的两个构建变量已经加好了，否则部署会报错，绑定是空的，登录会报 `internal error`。
+
 点部署，等构建跑完。全部打勾、显示**已自动部署**就是成功了，记下 Worker 地址（形如 `https://mango-mail.<你的子域>.workers.dev/`）。
 
 ![构建成功](docs/images/step3-build-success.png)
 
-### 第 4 步：绑定 D1 / KV / R2
+### 第 4 步：检查绑定（部署后）
 
-Workers → `mango-mail` → 设置 → **绑定** → 添加绑定，都选第 2 步新建的资源：
+部署完去 Workers → `mango-mail` → 设置 → **绑定**，确认三个绑定都在：
 
 | 绑定类型 | 变量名称 | 选哪个 |
 | --- | --- | --- |
@@ -98,17 +110,11 @@ Workers → `mango-mail` → 设置 → **绑定** → 添加绑定，都选第 
 
 ![绑定列表](docs/images/step4-bindings.png)
 
-![添加 KV 绑定](docs/images/step4-add-kv-binding.png)
-
-![添加 R2 绑定](docs/images/step4-add-r2-binding.png)
-
-![R2 绑定](docs/images/step4-r2-binding.png)
+> 绑定是部署时用第 2 步的构建变量填进配置文件的，部署时自动加上，面板里只是查看。如果这里是空的，说明构建变量没填或填错了，回去检查再部署一次。**不要只在面板里点「添加绑定」**，那样下次更新代码时会被删掉。
 
 #### 定时任务（Cron 触发器）
 
-部署后去 设置 → Triggers 看一眼，会多一条每天 16:00（UTC）运行的 Cron 触发器，是部署时自动加上的（配置在 `worker/wrangler.jsonc` 的 `triggers.crons`）。
-
-![Cron 触发器](docs/images/step4-cron-trigger.png)
+当前版本的 `worker/wrangler.jsonc` 里没有 `triggers`（为了避开免费账号 5 个触发器上限报 `10072`），所以部署后 Triggers 里是空的，定时日清不跑。
 
 它每天做 3 件事，作用是“每日维护：重置配额与用量、清理过期日志”，触发时间 `"0 16 * * *"`，也就是每天 UTC 16:00，北京时间午夜 0 点跑一次：
 
@@ -120,21 +126,27 @@ Workers → `mango-mail` → 设置 → **绑定** → 添加绑定，都选第 
 
 所以**收信完全不受影响**，发信在 50 封以内也完全正常。这个数字限制可以在变量（`DEFAULT_QUOTA`）中更改。
 
+如果你账号还有空闲的触发器名额，把下面这段加回 `worker/wrangler.jsonc` 再部署一次，Triggers 里就会多一条每天 16:00（UTC）运行的任务：
+
+```jsonc
+"triggers": { "crons": ["0 16 * * *"] }
+```
+
 > 免费账号一个账号最多 5 个 Cron 触发器。如果部署时报 `10072`，就是触发器满了：去别的 Worker 上删一条不用的 Cron 再重新部署；或者删掉 `worker/wrangler.jsonc` 里的 `triggers` 再部署（代价就是上面说的配额不清零）。
 
 ### 第 5 步：变量说明、设置
 
 ![运行变量和机密](docs/images/step5-variables.png)
 
-这些变量是部署时从 `worker/wrangler.jsonc` 里的 `vars` 自动加上去的，面板里点铅笔就能改，改完立即生效，重新部署也不会覆盖（`keep_vars: true`）。
+变量只在面板里设置：Workers → `mango-mail` → 设置 → **变量**，点铅笔改，改完立即生效。**不要把变量写进 `worker/wrangler.jsonc` 的 `vars`**——写进去的话，每次部署都会用配置文件里的值盖掉面板里的值（`keep_vars: true` 只保住配置文件里没提到的变量）。
 
 ![变量说明表](docs/images/step5-variables-table.png)
 
-| 变量 | 现在的值 | 意思 | 能改吗 |
+| 变量 | 面板里填什么 | 意思 | 说明 |
 | --- | --- | --- | --- |
 | `APP_NAME` | `Mango-Mail` | 面板显示名，左栏、登录页、网页标题用 | 面板名称 |
-| `ADMIN_EMAIL` | `admin@example.com` | 管理员邮箱，创建账号默认的邮箱 | 填你自己的地址，域名必须在 `MAIL_DOMAINS` 里，例如 `admin@你的域名` |
-| `MAIL_DOMAINS` | `["example.com"]` | 这个邮箱系统管哪几个域名，JSON 数组格式 | 单个 `["example01.com"]`，多个 `["example01.com","example02.com"]` |
+| `ADMIN_EMAIL` | `admin@你的域名` | 管理员邮箱，创建账号默认的邮箱 | 域名必须在 `MAIL_DOMAINS` 里 |
+| `MAIL_DOMAINS` | `["你的域名"]` | 这个邮箱系统管哪几个域名，JSON 数组格式 | 单个 `["example01.com"]`，多个 `["example01.com","example02.com"]` |
 | `ALLOW_REGISTER` | `true` | 允许公开注册码？`true` 是谁都能注册，`false` 是只能用邀请码注册 | 值：`false` 就关闭公开注册 |
 | `DEFAULT_QUOTA` | `50` | 每个用户每天能发几封，默认 50 | 值随意，新注册的用户按新值算 |
 | `PROVIDER_STRATEGY` | `priority` | `priority` 是按权重顺序试，失败自动换下一个；`round_robin` 是轮流用 | 一般 `priority` 就行 |
@@ -252,11 +264,13 @@ https://<你的 Worker 地址>/api/init/<你刚设的 JWT_SECRET>
 - [ ] `/api/init/<JWT_SECRET>` 显示 `success`
 - [ ] 从外部邮箱发一封到你的域名邮箱，面板收件箱能收到
 - [ ] 从面板发一封到外部邮箱，能收到
-- [ ] 设置 → Triggers 里有一条每天 16:00 的 Cron
+- [ ] 设置 → 绑定里有 DB / KV / R2 三个绑定
+- [ ] 设置 → 变量里的 `MAIL_DOMAINS` 是你的域名（不是 `example.com`）
+- [ ] （可选）设置 → Triggers 里有一条每天 16:00 的 Cron（把 `triggers` 加回配置文件才有）
 
 ## 常见问题
 
-- **注册报 `internal error`**：多半是没跑第 6 步初始化，先跑 `/api/init`。
+- **登录/注册报 `internal error`**：先去设置 → 绑定看 DB 绑定在不在，不在就是部署时被删了（见第 4 步），检查第 2 步的构建变量填没填对再部署；绑定在的话，再跑第 6 步 `/api/init`。
 - **发信报 429“发信配额不足”**：当天发满 `DEFAULT_QUOTA` 封了；等午夜 Cron 清零，或去 D1 跑 `UPDATE user SET used = 0`，或把 `DEFAULT_QUOTA` 调大（`-1` 为不限）。
 - **部署报 `10072`**：账号 Cron 触发器满 5 个了，见第 4 步。
 - **收不到信**：检查 Email Routing 的 Catch-all 目标是不是 `mango-mail`；MX / SPF / DKIM 是不是绿色；`MAIL_DOMAINS` 里有没有你的域名。

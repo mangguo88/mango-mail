@@ -11,4 +11,5 @@ dist/
 # 本地安装位置修正（沙盒环境专用，与项目无关）
 .npmrc
 worker/wrangler-deploy.toml
+worker/wrangler-deploy.jsonc
 worker/deploy.log

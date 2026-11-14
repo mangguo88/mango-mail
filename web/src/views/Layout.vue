@@ -20,7 +20,7 @@ function toggleSidebar() {
  * 170px 是「邮箱列表」那一行能完整显示的最小宽度，记在本地，刷新后还保持你拖过的宽度。
  * 默认 240px 是让头部 logo + Mango-Mail 名称完整显示的宽度（200px 时名称会被截成 Mango-M…）。
  */
-const SIDEBAR_WIDTH_KEY = 'henna.sidebar.width';
+const SIDEBAR_WIDTH_KEY = 'henna.sidebar.width.v2';
 const clampPx = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 function readSidebarWidth() {
   const v = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
@@ -379,19 +379,20 @@ const paths: Record<string, string> = {
 
     <!-- 侧栏与中间栏之间的分界线：拖动改侧栏宽度，点箭头收起/展开侧栏，箭头跟鼠标走（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
     <div
-      class="relative hidden w-[5px] shrink-0 cursor-col-resize touch-none bg-sand-200 transition-colors hover:bg-henna-400 active:bg-henna-500 md:block"
+      class="group relative hidden w-3 shrink-0 cursor-col-resize touch-none md:block"
       title="拖动调整侧栏宽度"
       @pointerdown="startSidebarDrag"
       @pointermove="sidebarArrowY = dividerArrowY($event)"
     >
+      <div class="mx-auto h-full w-[5px] bg-sand-200 transition-colors group-hover:bg-henna-400 group-active:bg-henna-500" />
       <button
-        class="absolute left-1/2 top-1/2 z-10 grid h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-sand-300 bg-white text-ink-500 shadow-sm hover:border-henna-200 hover:bg-henna-50 hover:text-henna-700"
+        class="absolute left-1/2 top-1/2 z-10 grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-sand-300 bg-white text-ink-500 shadow-sm hover:border-henna-200 hover:bg-henna-50 hover:text-henna-700"
         :style="sidebarArrowY === null ? undefined : { top: sidebarArrowY + 'px' }"
         :title="collapsed ? '展开侧栏' : '收起侧栏'"
         @click.stop="toggleSidebar"
         @pointerdown.stop
       >
-        <svg viewBox="0 0 24 24" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5">
           <path :d="collapsed ? paths.expand : paths.collapse" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>

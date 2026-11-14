@@ -102,7 +102,7 @@ const emptyText = computed(() => {
  * 列表栏宽：默认 280px（比原来的 320px 再窄一点），拖右侧分界线可改，
  * 150~520px 之间，最小 150px 刚好露出「收件箱」，记在本地。手机端不生效，列表仍占满屏。
  */
-const LIST_WIDTH_KEY = 'henna.list.width';
+const LIST_WIDTH_KEY = 'henna.list.width.v2';
 const clampListPx = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 function readListWidth() {
   const v = Number(localStorage.getItem(LIST_WIDTH_KEY));
@@ -241,19 +241,20 @@ onMounted(load);
     <!-- 列表与详情之间的分界线：拖动改列表宽度，点箭头收起/展开列表，箭头跟鼠标走（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
     <div
       v-if="isDesktop"
-      class="relative hidden w-[5px] shrink-0 cursor-col-resize touch-none bg-sand-200 transition-colors hover:bg-henna-400 active:bg-henna-500 md:block"
+      class="group relative hidden w-3 shrink-0 cursor-col-resize touch-none md:block"
       title="拖动调整列表宽度"
       @pointerdown="startListDrag"
       @pointermove="listArrowY = dividerArrowY($event)"
     >
+      <div class="mx-auto h-full w-[5px] bg-sand-200 transition-colors group-hover:bg-henna-400 group-active:bg-henna-500" />
       <button
-        class="absolute left-1/2 top-1/2 z-10 grid h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-henna-200 bg-white text-henna-600 shadow-sm hover:bg-henna-50 hover:text-henna-700"
+        class="absolute left-1/2 top-1/2 z-10 grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-henna-200 bg-white text-henna-600 shadow-sm hover:bg-henna-50 hover:text-henna-700"
         :style="listArrowY === null ? undefined : { top: listArrowY + 'px' }"
         :title="listCollapsed ? '展开列表' : '收起列表'"
         @click.stop="toggleListCollapsed"
         @pointerdown.stop
       >
-        <svg viewBox="0 0 24 24" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5">
           <path :d="listCollapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>

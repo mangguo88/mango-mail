@@ -138,7 +138,7 @@ function selectFolder(f: Folder) {
 }
 
 /** 列表栏宽：和收件箱共用同一把尺子（拖过的宽度两边同步） */
-const LIST_WIDTH_KEY = 'henna.list.width';
+const LIST_WIDTH_KEY = 'henna.list.width.v2';
 const clampListPx = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 function readListWidth() {
   const v = Number(localStorage.getItem(LIST_WIDTH_KEY));
@@ -188,7 +188,7 @@ function toggleListCollapsed() {
  * 220px 是让顶部的邮箱地址（admin@151819.xyz）完整显示的宽度（170px 时会被截成 admin@151819.x…）。
  * 点分界线上的箭头收起/展开，收起后留 14px、内容不渲染，不露半个字、不与前面的边线重合，展开恢复原来宽度。
  */
-const FOLDER_WIDTH_KEY = 'henna.folder.width';
+const FOLDER_WIDTH_KEY = 'henna.folder.width.v2';
 const FOLDER_COLLAPSED_KEY = 'henna.folder.collapsed';
 const clampFolderPx = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 function readFolderWidth() {
@@ -273,19 +273,20 @@ watch(
     <!-- 文件夹与列表之间的分界线：拖动改文件夹宽度，点箭头收起/展开文件夹，箭头跟鼠标走（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
     <div
       v-if="isDesktop"
-      class="relative hidden w-[5px] shrink-0 cursor-col-resize touch-none bg-sand-200 transition-colors hover:bg-henna-400 active:bg-henna-500 md:block"
+      class="group relative hidden w-3 shrink-0 cursor-col-resize touch-none md:block"
       title="拖动调整文件夹宽度"
       @pointerdown="startFolderDrag"
       @pointermove="folderArrowY = dividerArrowY($event)"
     >
+      <div class="mx-auto h-full w-[5px] bg-sand-200 transition-colors group-hover:bg-henna-400 group-active:bg-henna-500" />
       <button
-        class="absolute left-1/2 top-1/2 z-10 grid h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-henna-200 bg-white text-henna-600 shadow-sm hover:bg-henna-50 hover:text-henna-700"
+        class="absolute left-1/2 top-1/2 z-10 grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-henna-200 bg-white text-henna-600 shadow-sm hover:bg-henna-50 hover:text-henna-700"
         :style="folderArrowY === null ? undefined : { top: folderArrowY + 'px' }"
         :title="folderCollapsed ? '展开文件夹' : '收起文件夹'"
         @click.stop="toggleFolderCollapsed"
         @pointerdown.stop
       >
-        <svg viewBox="0 0 24 24" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5">
           <path :d="folderCollapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
@@ -346,19 +347,20 @@ watch(
     <!-- 列表与详情之间的分界线：拖动改列表宽度，点箭头收起/展开列表，箭头跟鼠标走（仅桌面端；收起后箭头还留在这里，点一下就展开） -->
     <div
       v-if="isDesktop"
-      class="relative hidden w-[5px] shrink-0 cursor-col-resize touch-none bg-sand-200 transition-colors hover:bg-henna-400 active:bg-henna-500 md:block"
+      class="group relative hidden w-3 shrink-0 cursor-col-resize touch-none md:block"
       title="拖动调整列表宽度"
       @pointerdown="startListDrag"
       @pointermove="listArrowY = dividerArrowY($event)"
     >
+      <div class="mx-auto h-full w-[5px] bg-sand-200 transition-colors group-hover:bg-henna-400 group-active:bg-henna-500" />
       <button
-        class="absolute left-1/2 top-1/2 z-10 grid h-4 w-4 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-henna-200 bg-white text-henna-600 shadow-sm hover:bg-henna-50 hover:text-henna-700"
+        class="absolute left-1/2 top-1/2 z-10 grid h-6 w-6 -translate-x-1/2 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-henna-200 bg-white text-henna-600 shadow-sm hover:bg-henna-50 hover:text-henna-700"
         :style="listArrowY === null ? undefined : { top: listArrowY + 'px' }"
         :title="listCollapsed ? '展开列表' : '收起列表'"
         @click.stop="toggleListCollapsed"
         @pointerdown.stop
       >
-        <svg viewBox="0 0 24 24" class="h-2.5 w-2.5" fill="none" stroke="currentColor" stroke-width="2.5">
+        <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.5">
           <path :d="listCollapsed ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'" stroke-linecap="round" stroke-linejoin="round" />
         </svg>
       </button>
